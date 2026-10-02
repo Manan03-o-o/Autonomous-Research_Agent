@@ -1,9 +1,7 @@
 import aiohttp
 from bs4 import BeautifulSoup
 from typing import List, Dict, Any
-from google.genai import types
-from .planner import get_gemini_client
-
+from app.services.embedding_service import get_embeddings as fastembed_get_embeddings
 async def fetch_page_content(url: str) -> str:
     """
     Fetches the HTML of a webpage and extracts clean text using BeautifulSoup.
@@ -45,21 +43,10 @@ def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 200) -> List[st
 
 async def get_embeddings(texts: List[str]) -> List[List[float]]:
     """
-    Gets text embeddings using Gemini.
+    Gets text embeddings using FastEmbed.
     """
     if not texts:
         return []
-        
-    client = get_gemini_client()
-    try:
-        # Gemini text-embedding-004
-        result = client.models.embed_content(
-            model='text-embedding-004',
-            contents=texts,
-        )
-        # Result contains a list of embeddings
-        return [e.values for e in result.embeddings]
-    except Exception as e:
-        print(f"Error getting embeddings: {e}")
-        # Return empty list or fallback to zero vectors for error handling
-        return []
+    
+    # Run synchronously or in a thread pool if needed, fastembed is quite fast locally
+    return fastembed_get_embeddings(texts)

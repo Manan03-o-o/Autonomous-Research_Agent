@@ -8,14 +8,16 @@ class ResearchJob(Base):
     __tablename__ = "research_jobs"
     id = Column(String, primary_key=True, index=True)
     user_question = Column(String, nullable=False)
-    status = Column(String, default="planning") # planning, searching, extracting, generating, completed, failed
+    status = Column(String, default="pending") # pending, planning, searching, extracting, analyzing, critiquing, generating, verifying, completed, failed
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     completed_at = Column(DateTime(timezone=True), nullable=True)
     research_depth = Column(String, default="standard")
+    error_message = Column(Text, nullable=True)
     
-    sources = relationship("Source", back_populates="job")
-    claims = relationship("Claim", back_populates="job")
-    report = relationship("Report", uselist=False, back_populates="job")
+    sources = relationship("Source", back_populates="job", cascade="all, delete-orphan")
+    claims = relationship("Claim", back_populates="job", cascade="all, delete-orphan")
+    report = relationship("Report", uselist=False, back_populates="job", cascade="all, delete-orphan")
+
 
 class Source(Base):
     __tablename__ = "sources"
@@ -37,7 +39,7 @@ class ExtractedContent(Base):
     id = Column(String, primary_key=True, index=True)
     source_id = Column(String, ForeignKey("sources.id"))
     content = Column(Text)
-    embedding = Column(Vector(768))
+    embedding = Column(Vector(384))
     
     source = relationship("Source", back_populates="chunks")
 

@@ -1,9 +1,7 @@
 import json
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any
-from google.genai import types
-from .planner import get_gemini_client
-from app.models.schemas import ClaimResponse
+from app.services.llm_service import generate_structured_completion
 
 class ClaimExtraction(BaseModel):
     claims: List[str] = Field(description="Factual claims extracted from the text")
@@ -11,13 +9,11 @@ class ClaimExtraction(BaseModel):
 
 async def extract_claims_from_text(text: str, question: str) -> List[Dict[str, Any]]:
     """
-    Extracts relevant factual claims from a piece of text that answer the question.
+    Extracts relevant factual claims from a piece of text that answer the question using Groq.
     """
     if not text:
         return []
         
-    client = get_gemini_client()
-    
     prompt = f"""
     You are an expert Research Analyst.
     Extract key factual claims from the following text that help answer the research question: "{question}"
@@ -27,18 +23,21 @@ async def extract_claims_from_text(text: str, question: str) -> List[Dict[str, A
     
     Return a list of clear, standalone factual statements and your confidence in their accuracy based solely on the text.
     If the text contains no relevant information, return an empty list.
+    
+    Return strictly JSON matching this structure:
+    {{
+      "claims": ["claim 1", "claim 2"],
+      "confidence": [0.95, 0.8]
+    }}
     """
     
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant designed to output strictly JSON."},
+        {"role": "user", "content": prompt}
+    ]
+    
     try:
-        response = client.models.generate_content(
-            model='gemini-2.5-pro',
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=ClaimExtraction,
-            ),
-        )
-        data = json.loads(response.text)
+        data = generate_structured_completion(messages=messages)
         
         results = []
         for i, claim in enumerate(data.get("claims", [])):

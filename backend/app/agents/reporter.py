@@ -1,14 +1,10 @@
 import json
 from typing import List, Dict, Any
-from google.genai import types
-from .planner import get_gemini_client
-
+from app.services.llm_service import generate_completion
 async def generate_research_report(question: str, plan: Dict[str, Any], claims_and_evidence: List[Dict[str, Any]]) -> str:
     """
-    Synthesizes the gathered evidence into a structured markdown report.
+    Synthesizes the gathered evidence into a structured markdown report using Groq.
     """
-    client = get_gemini_client()
-    
     # Format evidence for the prompt
     evidence_text = ""
     for i, item in enumerate(claims_and_evidence):
@@ -39,12 +35,14 @@ async def generate_research_report(question: str, plan: Dict[str, Any], claims_a
     {evidence_text}
     """
     
+    messages = [
+        {"role": "system", "content": "You are a professional research analyst."},
+        {"role": "user", "content": prompt}
+    ]
+    
     try:
-        response = client.models.generate_content(
-            model='gemini-2.5-pro',
-            contents=prompt,
-        )
-        return response.text
+        report_text = generate_completion(messages=messages)
+        return report_text
     except Exception as e:
         print(f"Error generating report: {e}")
         return "# Error\nFailed to generate report."

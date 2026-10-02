@@ -14,24 +14,25 @@ class ResearchJobResponse(ResearchJobBase):
     status: str
     created_at: datetime
     completed_at: Optional[datetime] = None
+    error_message: Optional[str] = None
     
     model_config = ConfigDict(from_attributes=True)
 
 class SourceResponse(BaseModel):
     id: str
-    title: Optional[str]
-    url: Optional[str]
-    publisher: Optional[str]
-    published_at: Optional[str]
-    source_type: Optional[str]
-    relevance_score: Optional[float]
+    title: Optional[str] = None
+    url: Optional[str] = None
+    publisher: Optional[str] = None
+    published_at: Optional[str] = None
+    source_type: Optional[str] = None
+    relevance_score: Optional[float] = None
     
     model_config = ConfigDict(from_attributes=True)
 
 class EvidenceResponse(BaseModel):
     id: str
     text: str
-    source: SourceResponse
+    source: Optional[SourceResponse] = None
     
     model_config = ConfigDict(from_attributes=True)
 

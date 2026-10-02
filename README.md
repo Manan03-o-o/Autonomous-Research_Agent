@@ -1,75 +1,67 @@
 # Autonomous AI Research Agent
 
-A production-style, multi-agent AI research platform designed to autonomously research complex questions, gather evidence, cross-check claims, and synthesize detailed reports with citations.
+A full-stack, autonomous research agent that orchestrates a multi-step workflow to generate professional, thoroughly researched, and verified reports. Built as a portfolio project for a Senior Full Stack AI Engineer.
 
 ## Project Overview
 
-The Autonomous AI Research Agent goes beyond a simple chatbot. When asked a complex question (e.g., "Analyze the cybersecurity risks associated with autonomous AI agents"), it orchestrates a workflow of specialized agents to:
-1. Break down the question into a structured research plan.
-2. Generate optimized search queries and retrieve raw web content.
-3. Extract relevant factual claims and store them via RAG.
-4. Synthesize the collected evidence into a comprehensive Markdown report, fully cited.
+This agent does not just pass a user prompt to an LLM. It autonomously:
+1. Breaks down complex questions into sub-questions (Planner)
+2. Generates queries and searches the web (Searcher via Tavily)
+3. Extracts and chunks content from sources (Extractor)
+4. Generates lightweight embeddings and stores them in PostgreSQL (FastEmbed + pgvector)
+5. Extracts specific claims and confidence scores (Evidence)
+6. Evaluates if the evidence is sufficient, or repeats the search (Critic)
+7. Generates a structured Markdown report (Reporter via Groq)
+8. Verifies all citations match the evidence (Verifier)
 
-## Architecture
+## Architecture & Technology Stack
 
-The system uses a modern, full-stack architecture.
+- **LLM Provider:** Groq (Using `llama3-70b-8192` via `groq` SDK)
+- **Search Provider:** Tavily Search API
+- **Embeddings:** FastEmbed (`BAAI/bge-small-en-v1.5`, 384 dimensions, ONNX runtime - no PyTorch/GPU required)
+- **Backend:** Python 3.11, FastAPI, SQLAlchemy, Alembic
+- **Database:** PostgreSQL with `pgvector`
+- **Cache / Messaging:** Redis
+- **Frontend:** React, TypeScript, Vite, Tailwind v4
+- **Real-Time:** Server-Sent Events (SSE) stream progress directly to the UI.
+- **Infrastructure:** Docker & Docker Compose
 
-**Backend**:
-- **Framework**: FastAPI (Python 3.11+)
-- **Database**: PostgreSQL with `pgvector` for vector embeddings
-- **ORM**: SQLAlchemy
-- **LLM Integration**: Google Gemini API via `google-genai`
-- **Search**: DuckDuckGo Search (for MVP; extensible to Tavily/Bing)
-- **Streaming**: Server-Sent Events (SSE)
+## Setup & Local Development
 
-**Frontend**:
-- **Framework**: React 18 + Vite
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **Icons**: Lucide React
-
-## Agent Workflow
-
-1. **Planner Agent**: Decomposes the user's question into sub-questions and key dimensions.
-2. **Search Agent**: Translates the plan into exact search engine queries and retrieves URLs.
-3. **Extractor Agent**: Scrapes HTML, chunks text, and generates vector embeddings.
-4. **Evidence Agent (RAG)**: Retrieves relevant text chunks and extracts specific factual claims.
-5. **Reporter Agent**: Compiles the evidence into a professional, cited research report.
-
-## Setup & Running Locally
-
-### Prerequisites
-- Docker & Docker Compose
-- Node.js & npm (for frontend)
-- A Google Gemini API Key
-
-### 1. Environment Configuration
-Create a `.env` file in the root directory based on `.env.example`:
-```bash
-GEMINI_API_KEY=your_gemini_api_key_here
+### 1. Environment Variables
+Create a `.env` file in the root directory (copy from `.env.example`):
+```env
+GROQ_API_KEY=your_groq_api_key_here
+TAVILY_API_KEY=your_tavily_api_key_here
 ```
 
-### 2. Start the Backend & Database
-Use Docker Compose to spin up the FastAPI backend, PostgreSQL, and Redis:
+### 2. Start the Backend via Docker
+Ensure Docker Desktop is running, then execute:
 ```bash
 docker-compose up -d --build
 ```
-The backend API will be available at `http://localhost:8000`.
+This will start PostgreSQL (with vector support), Redis, and the FastAPI backend on `http://localhost:8000`.
 
 ### 3. Start the Frontend
-In a new terminal, start the Vite dev server:
+In a new terminal:
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-The frontend will be available at `http://localhost:5173`.
+Access the dashboard at `http://localhost:5173`.
 
-## Future Improvements (Phases 2 & 3)
-- **Contradiction Detection**: Implement a Critic agent to detect conflicting sources.
-- **Advanced RAG**: Full hybrid search combining BM25 and vector search.
-- **Observability**: Track LLM tokens, search latency, and agent iterations.
-- **Evaluation**: Implement precision/recall metrics for the retrieval pipeline.
+## Database Schema
 
-## License
-MIT License
+- **ResearchJob:** Tracks the high-level request, user question, status, and completion time.
+- **Source:** Web pages found during research (URL, title).
+- **ExtractedContent:** Text chunks and their 384-dimensional vector embeddings.
+- **Claim:** Factual claims extracted from text with a confidence score.
+- **Evidence:** Snippets of text backing up a Claim, linked to a Source.
+- **Report:** The final generated markdown report.
+
+## Future Improvements
+
+- Add hybrid search (keyword + vector).
+- Implement Playwright for JavaScript-heavy pages (currently uses BeautifulSoup).
+- Add PDF export functionality on the frontend.
